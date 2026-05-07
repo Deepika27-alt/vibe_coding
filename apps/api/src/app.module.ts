@@ -7,6 +7,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { WorkflowsModule } from './workflows/workflows.module';
 import { FlowInstancesModule } from './flow-instances/flow-instances.module';
 import { WorkflowEngineModule } from './workflow-engine/workflow-engine.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { WorkflowEngineModule } from './workflow-engine/workflow-engine.module';
     WorkflowsModule,
     FlowInstancesModule,
     WorkflowEngineModule,
+    TasksModule,
   ],
   controllers: [],
   providers: [],
