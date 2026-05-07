@@ -1,0 +1,193 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  email        String     @unique
+  name         String
+  department   String
+  status       UserStatus @default(ACTIVE)
+  passwordHash String?
+  lastLoginAt  DateTime?
+  refreshToken String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  roles            UserRole[]
+  createdWorkflows WorkflowDefinition[] @relation("WorkflowCreator")
+  initiatedFlows   FlowInstance[]       @relation("FlowInitiator")
+  assignedTasks    Task[]               @relation("TaskAssignee")
+  completedTasks   Task[]               @relation("TaskCompleter")
+  auditEvents      AuditEvent[]         @relation("AuditActor")
+}
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?
+  canInitiate String[]
+  canAction   String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users UserRole[]
+  tasks Task[]     @relation("RoleTasks")
+}
+
+model UserRole {
+  userId String @db.Uuid
+  roleId String @db.Uuid
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+enum WorkflowStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model WorkflowDefinition {
+  id          String         @id @default(uuid()) @db.Uuid
+  name        String
+  description String?
+  department  String
+  version     Int            @default(1)
+  status      WorkflowStatus @default(DRAFT)
+  graph       Json
+  createdById String         @db.Uuid
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  createdBy User             @relation("WorkflowCreator", fields: [createdById], references: [id])
+  forms     FormDefinition[]
+  instances FlowInstance[]
+
+  @@index([createdById])
+}
+
+model FormDefinition {
+  id           String   @id @default(uuid()) @db.Uuid
+  definitionId String   @db.Uuid
+  stepId       String
+  fields       Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  definition WorkflowDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+
+  @@unique([definitionId, stepId])
+  @@index([definitionId])
+}
+
+enum FlowInstanceStatus {
+  ACTIVE
+  COMPLETED
+  REJECTED
+  CANCELLED
+  ESCALATED
+}
+
+model FlowInstance {
+  id                String             @id @default(uuid()) @db.Uuid
+  definitionId      String             @db.Uuid
+  definitionVersion Int
+  status            FlowInstanceStatus @default(ACTIVE)
+  currentStepId     String
+  data              Json
+  initiatedById     String             @db.Uuid
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  definition  WorkflowDefinition @relation(fields: [definitionId], references: [id])
+  initiatedBy User               @relation("FlowInitiator", fields: [initiatedById], references: [id])
+  tasks       Task[]
+  auditEvents AuditEvent[]
+
+  @@index([definitionId])
+  @@index([initiatedById])
+}
+
+enum TaskType {
+  FORM
+  APPROVAL
+  MANUAL
+}
+
+enum TaskStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+  ESCALATED
+  SENT_BACK
+}
+
+model Task {
+  id             String     @id @default(uuid()) @db.Uuid
+  instanceId     String     @db.Uuid
+  stepId         String
+  type           TaskType
+  assignedToId   String?    @db.Uuid
+  assignedRoleId String?    @db.Uuid
+  status         TaskStatus @default(PENDING)
+  comment        String?
+  dueAt          DateTime?
+  completedAt    DateTime?
+  completedById  String?    @db.Uuid
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  instance     FlowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  assignedTo   User?        @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  assignedRole Role?        @relation("RoleTasks", fields: [assignedRoleId], references: [id])
+  completedBy  User?        @relation("TaskCompleter", fields: [completedById], references: [id])
+
+  @@index([instanceId])
+  @@index([assignedToId])
+  @@index([assignedRoleId])
+  @@index([completedById])
+}
+
+enum AuditAction {
+  STARTED
+  SUBMITTED
+  APPROVED
+  REJECTED
+  SENT_BACK
+  ESCALATED
+  CANCELLED
+  COMPLETED
+}
+
+model AuditEvent {
+  id         String      @id @default(uuid()) @db.Uuid
+  instanceId String      @db.Uuid
+  actorId    String      @db.Uuid
+  action     AuditAction
+  stepId     String?
+  snapshot   Json?
+  note       String?
+  createdAt  DateTime    @default(now())
+
+  instance FlowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  actor    User         @relation("AuditActor", fields: [actorId], references: [id])
+
+  @@index([instanceId])
+  @@index([actorId])
+}
