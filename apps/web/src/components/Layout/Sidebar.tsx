@@ -16,7 +16,11 @@ import {
   Inbox as InboxIcon, 
   Send as RequestIcon, 
   ListAlt as CatalogueIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  People as PeopleIcon,
+  Security as RolesIcon,
+  Settings as SettingsIcon,
+  AdminPanelSettings as AdminIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -27,12 +31,18 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const menuItems = [
-    { text: 'Inbox', icon: <InboxIcon />, path: '/inbox', badge: 3 }, // Hardcoded badge for now
+    { text: 'Inbox', icon: <InboxIcon />, path: '/inbox', badge: 3 },
     { text: 'My Requests', icon: <RequestIcon />, path: '/requests' },
     { text: 'Catalogue', icon: <CatalogueIcon />, path: '/catalogue' },
+  ];
+
+  const adminItems = [
+    { text: 'Users', icon: <PeopleIcon />, path: '/admin/users' },
+    { text: 'Roles', icon: <RolesIcon />, path: '/admin/roles' },
+    { text: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' },
   ];
 
   return (
@@ -103,6 +113,44 @@ const Sidebar: React.FC = () => {
           );
         })}
       </List>
+
+      {user?.role === 'Platform Admin' && (
+        <>
+          <Box sx={{ px: 3, mt: 2, mb: 1 }}>
+            <Typography variant="overline" sx={{ fontWeight: 700, color: 'text.disabled', letterSpacing: '0.1em' }}>
+              Administration
+            </Typography>
+          </Box>
+          <List sx={{ px: 2, py: 0 }}>
+            {adminItems.map((item) => {
+              const active = location.pathname.startsWith(item.path);
+              return (
+                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                  <ListItemButton
+                    onClick={() => navigate(item.path)}
+                    sx={{
+                      borderRadius: 2,
+                      backgroundColor: active ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
+                      color: active ? theme.palette.primary.main : theme.palette.text.secondary,
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                      },
+                    }}
+                  >
+                    <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText 
+                      primary={item.text} 
+                      primaryTypographyProps={{ fontWeight: active ? 600 : 500 }} 
+                    />
+                  </ListItemButton>
+                </ListItem>
+              );
+            })}
+          </List>
+        </>
+      )}
 
       <Box sx={{ mt: 'auto', p: 2 }}>
         <ListItem disablePadding>

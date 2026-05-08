@@ -1,11 +1,17 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/Layout/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Inbox from './pages/Inbox';
 import TaskDetail from './pages/TaskDetail';
 import MyRequests from './pages/MyRequests';
 import Catalogue from './pages/Catalogue';
+import UsersList from './pages/admin/UsersList';
+import RolesList from './pages/admin/RolesList';
+import RoleEdit from './pages/admin/RoleEdit';
+import SystemSettings from './pages/admin/SystemSettings';
+import WorkflowStudio from './pages/studio/WorkflowStudio';
 
 function App() {
   return (
@@ -19,6 +25,18 @@ function App() {
           <Route path="/tasks/:id" element={<TaskDetail />} />
           <Route path="/requests" element={<MyRequests />} />
           <Route path="/catalogue" element={<Catalogue />} />
+
+          {/* Admin Routes */}
+          <Route element={<ProtectedRoute allowedRoles={['Platform Admin']} />}>
+            <Route path="/admin/users" element={<UsersList />} />
+            <Route path="/admin/roles" element={<RolesList />} />
+            <Route path="/admin/roles/:id" element={<RoleEdit />} />
+            <Route path="/admin/settings" element={<SystemSettings />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['Platform Admin']} />}>
+          <Route path="/studio/:workflowId" element={<WorkflowStudio />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/inbox" replace />} />
