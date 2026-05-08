@@ -93,31 +93,7 @@ export class WorkflowEngineService {
         const node = nodes.find((n: any) => n.id === nextStepId);
         if (!node) continue;
 
-        const taskTypeMap: Record<string, TaskType> = {
-          'Form': 'FORM',
-          'Approval': 'APPROVAL',
-          'Manual': 'MANUAL',
-        };
-
-        const task = await prisma.task.create({
-          data: {
-            instanceId: instance.id,
-            stepId: nextStepId,
-            type: taskTypeMap[node.type] || 'MANUAL',
-            status: 'PENDING',
-            assignedRoleId: node.assignedRoleId || null,
-            assignedToId: node.assignedToId || null,
-          },
-        });
-        
-        // Notify assignee (if it's a specific user)
-        if (task.assignedToId) {
-          await this.notificationDispatcher.dispatch('task.assigned', {
-            taskId: task.id,
-            assigneeId: task.assignedToId,
-          });
-        }
-        
+        const task = await this.createTask(prisma, instance.id, node);
         createdTasks.push(task);
       }
 
@@ -164,5 +140,59 @@ export class WorkflowEngineService {
 
       return { instanceId, createdTasks, reachedEnd, endNodeStatus };
     });
+  }
+
+  async createTask(prisma: any, instanceId: string, node: any) {
+    const taskTypeMap: Record<string, TaskType> = {
+      'Form': 'FORM',
+      'Approval': 'APPROVAL',
+      'Manual': 'MANUAL',
+    };
+
+    const now = new Date();
+    let dueAt: Date | null = null;
+    const sla = node.sla || node.config?.sla;
+
+    if (sla && sla.durationHours) {
+      dueAt = new Date(now.getTime() + sla.durationHours * 60 * 60 * 1000);
+    }
+
+    const task = await prisma.task.create({
+      data: {
+        instanceId,
+        stepId: node.id,
+        type: taskTypeMap[node.type] || 'MANUAL',
+        status: 'PENDING',
+        assignedRoleId: node.assignedRoleId || null,
+        assignedToId: node.assignedToId || null,
+        dueAt,
+      },
+    });
+
+    if (sla && (sla.targetUserId || sla.targetRoleId)) {
+      const bufferHours = sla.bufferHours || 2;
+      const notifyAt = dueAt 
+        ? new Date(dueAt.getTime() - bufferHours * 60 * 60 * 1000)
+        : new Date(now.getTime());
+
+      await prisma.taskEscalation.create({
+        data: {
+          taskId: task.id,
+          targetUserId: sla.targetUserId || null,
+          targetRoleId: sla.targetRoleId || null,
+          notifyAt,
+        },
+      });
+    }
+
+    // Notify assignee (if it's a specific user)
+    if (task.assignedToId) {
+      await this.notificationDispatcher.dispatch('task.assigned', {
+        taskId: task.id,
+        assigneeId: task.assignedToId,
+      });
+    }
+
+    return task;
   }
 }

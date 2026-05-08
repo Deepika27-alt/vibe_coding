@@ -3,9 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateFlowInstanceDto } from './dto/create-flow-instance.dto';
 import { FlowInstanceStatus, TaskType, AuditAction } from '@prisma/client';
 
+import { WorkflowEngineService } from '../workflow-engine/workflow-engine.service';
+
 @Injectable()
 export class FlowInstancesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly workflowEngine: WorkflowEngineService,
+  ) {}
 
   async create(createFlowInstanceDto: CreateFlowInstanceDto, userId: string) {
     return this.prisma.$transaction(async (prisma) => {
@@ -49,22 +54,7 @@ export class FlowInstancesService {
       });
 
       if (nextNode && nextNode.type !== 'End') {
-        const taskTypeMap: Record<string, TaskType> = {
-          'Form': 'FORM',
-          'Approval': 'APPROVAL',
-          'Manual': 'MANUAL',
-        };
-
-        await prisma.task.create({
-          data: {
-            instanceId: instance.id,
-            stepId: nextNode.id,
-            type: taskTypeMap[nextNode.type] || 'MANUAL',
-            status: 'PENDING',
-            assignedRoleId: nextNode.assignedRoleId || null,
-            assignedToId: nextNode.assignedToId || null,
-          },
-        });
+        await this.workflowEngine.createTask(prisma, instance.id, nextNode);
       } else if (nextNode && nextNode.type === 'End') {
         await prisma.flowInstance.update({
           where: { id: instance.id },

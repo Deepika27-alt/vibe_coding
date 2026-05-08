@@ -28,6 +28,9 @@ export class NotificationDispatcher {
         case 'task.escalated':
           await this.handleTaskEscalated(data, appUrl);
           break;
+        case 'task.escalated_assignee':
+          await this.handleTaskEscalatedAssignee(data, appUrl);
+          break;
         case 'instance.completed':
           await this.handleInstanceCompleted(data, appUrl);
           break;
@@ -113,6 +116,28 @@ export class NotificationDispatcher {
     `;
 
     await this.emailService.sendEmail(escalationTargetEmail, subject, content);
+  }
+
+  private async handleTaskEscalatedAssignee(data: { taskId: string }, appUrl: string) {
+    const { taskId } = data;
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        instance: { include: { definition: true } },
+        assignedTo: true,
+      }
+    });
+
+    if (!task || !task.assignedTo) return;
+
+    const subject = `Notice: Your Task was Escalated - ${task.instance.definition.name}`;
+    const content = `
+      <p>Hello ${task.assignedTo.name},</p>
+      <p>The task assigned to you in the workflow <strong>${task.instance.definition.name}</strong> has been escalated because it passed its deadline.</p>
+      <p>The task is no longer assigned to you.</p>
+    `;
+
+    await this.emailService.sendEmail(task.assignedTo.email, subject, content);
   }
 
   private async handleInstanceCompleted(data: { instanceId: string }, appUrl: string) {

@@ -147,23 +147,39 @@ model Task {
   assignedRoleId String?    @db.Uuid
   status         TaskStatus @default(PENDING)
   comment        String?
-  dueAt          DateTime?
-  reminderSent   Boolean    @default(false)
-  completedAt    DateTime?
-  completedById  String?    @db.Uuid
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  dueAt             DateTime?
+  sla_reminder_sent Boolean    @default(false)
+  escalated         Boolean    @default(false)
+  reminderSent      Boolean    @default(false)
+  completedAt       DateTime?
+  completedById     String?    @db.Uuid
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
-  instance     FlowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  assignedTo   User?        @relation("TaskAssignee", fields: [assignedToId], references: [id])
-  assignedRole Role?        @relation("RoleTasks", fields: [assignedRoleId], references: [id])
-  completedBy  User?        @relation("TaskCompleter", fields: [completedById], references: [id])
+  instance     FlowInstance    @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  assignedTo   User?           @relation("TaskAssignee", fields: [assignedToId], references: [id])
+  assignedRole Role?           @relation("RoleTasks", fields: [assignedRoleId], references: [id])
+  completedBy  User?           @relation("TaskCompleter", fields: [completedById], references: [id])
+  escalation   TaskEscalation?
 
   @@index([instanceId])
   @@index([assignedToId])
   @@index([assignedRoleId])
   @@index([completedById])
 }
+
+model TaskEscalation {
+  id           String   @id @default(uuid()) @db.Uuid
+  taskId       String   @unique @db.Uuid
+  targetUserId String?  @db.Uuid
+  targetRoleId String?  @db.Uuid
+  notifyAt     DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
 
 enum AuditAction {
   STARTED

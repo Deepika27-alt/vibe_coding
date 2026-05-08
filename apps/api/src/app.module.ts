@@ -10,6 +10,8 @@ import { WorkflowEngineModule } from './workflow-engine/workflow-engine.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
+import { SLAModule } from './sla/sla.module';
+
 @Module({
   imports: [
     PrismaModule,
@@ -23,6 +25,7 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     NotificationsModule,
+    SLAModule,
   ],
   controllers: [],
   providers: [],

@@ -87,8 +87,10 @@ export class TasksService {
         const diffHours = (due.getTime() - now.getTime()) / (1000 * 60 * 60);
         if (diffHours < 0) {
           slaStatus = 'breached';
-        } else if (diffHours < 24) {
+        } else if (diffHours < 2) {
           slaStatus = 'at_risk';
+        } else {
+          slaStatus = 'on_time';
         }
       }
 
@@ -270,16 +272,7 @@ export class TasksService {
                data: { currentStepId: targetNode.id }
              });
 
-             await prisma.task.create({
-               data: {
-                 instanceId: task.instanceId,
-                 stepId: targetNode.id,
-                 type: taskTypeMap[targetNode.type] || 'MANUAL',
-                 status: 'PENDING',
-                 assignedToId: targetNode.assignedToId || null,
-                 assignedRoleId: targetNode.assignedRoleId || null,
-               }
-             });
+             await this.workflowEngine.createTask(prisma, task.instanceId, targetNode);
           }
           return { message: 'Rejected, followed rejection path', instanceId: task.instanceId };
         }
@@ -337,16 +330,7 @@ export class TasksService {
         data: { currentStepId: targetNode.id }
       });
 
-      const newTask = await prisma.task.create({
-        data: {
-          instanceId: task.instanceId,
-          stepId: targetNode.id,
-          type: taskTypeMap[targetNode.type] || 'MANUAL',
-          status: 'PENDING',
-          assignedToId: targetNode.assignedToId || null,
-          assignedRoleId: targetNode.assignedRoleId || null,
-        }
-      });
+      const newTask = await this.workflowEngine.createTask(prisma, task.instanceId, targetNode);
 
       return { message: 'Task sent back successfully', newTask };
     });
