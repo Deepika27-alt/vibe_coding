@@ -148,6 +148,7 @@ model Task {
   status         TaskStatus @default(PENDING)
   comment        String?
   dueAt          DateTime?
+  reminderSent   Boolean    @default(false)
   completedAt    DateTime?
   completedById  String?    @db.Uuid
   createdAt      DateTime   @default(now())

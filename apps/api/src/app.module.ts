@@ -8,7 +8,9 @@ import { WorkflowsModule } from './workflows/workflows.module';
 import { FlowInstancesModule } from './flow-instances/flow-instances.module';
 import { WorkflowEngineModule } from './workflow-engine/workflow-engine.module';
 import { TasksModule } from './tasks/tasks.module';
-
+import { ScheduleModule } from '@nestjs/schedule';
+import { ConfigModule } from '@nestjs/config';
+import { NotificationsModule } from './notifications/notifications.module';
 @Module({
   imports: [
     PrismaModule,
@@ -25,6 +27,9 @@ import { TasksModule } from './tasks/tasks.module';
     FlowInstancesModule,
     WorkflowEngineModule,
     TasksModule,
+    ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
+    NotificationsModule,
   ],
   controllers: [],
   providers: [],
