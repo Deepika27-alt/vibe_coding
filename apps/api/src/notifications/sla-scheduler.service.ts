@@ -1,8 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
+import { NotificationDispatcher } from './notification-dispatcher.service';
 
 @Injectable()
 export class SlaSchedulerService {
@@ -10,7 +9,7 @@ export class SlaSchedulerService {
 
   constructor(
     private readonly prisma: PrismaService,
-    @InjectQueue('notifications') private readonly notificationsQueue: Queue,
+    private readonly notificationDispatcher: NotificationDispatcher,
   ) {}
 
   @Cron(CronExpression.EVERY_5_MINUTES)
@@ -37,12 +36,12 @@ export class SlaSchedulerService {
     this.logger.log(`Found ${tasksToRemind.length} tasks needing reminders.`);
 
     for (const task of tasksToRemind) {
-      await this.notificationsQueue.add('task.reminder', { taskId: task.id });
+      await this.notificationDispatcher.dispatch('task.reminder', { taskId: task.id });
       await this.prisma.task.update({
         where: { id: task.id },
         data: { reminderSent: true },
       });
-      this.logger.log(`Enqueued reminder for task ${task.id}`);
+      this.logger.log(`Dispatched reminder for task ${task.id}`);
     }
   }
 
@@ -72,11 +71,11 @@ export class SlaSchedulerService {
         const escalationTargetEmail = stepNode?.data?.escalationTargetEmail;
 
         if (escalationTargetEmail) {
-          await this.notificationsQueue.add('task.escalated', {
+          await this.notificationDispatcher.dispatch('task.escalated', {
             taskId: task.id,
             escalationTargetEmail,
           });
-          this.logger.log(`Enqueued escalation for task ${task.id} to ${escalationTargetEmail}`);
+          this.logger.log(`Dispatched escalation for task ${task.id} to ${escalationTargetEmail}`);
         } else {
           this.logger.warn(`No escalationTargetEmail found for task ${task.id} (step ${task.stepId})`);
         }

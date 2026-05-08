@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FlowInstanceStatus, TaskType } from '@prisma/client';
+import { NotificationDispatcher } from '../notifications/notification-dispatcher.service';
 
 @Injectable()
 export class WorkflowEngineService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationDispatcher: NotificationDispatcher,
+  ) {}
 
   async advanceInstance(instanceId: string, completedTaskId: string) {
     return this.prisma.$transaction(async (prisma) => {
@@ -105,6 +109,15 @@ export class WorkflowEngineService {
             assignedToId: node.assignedToId || null,
           },
         });
+        
+        // Notify assignee (if it's a specific user)
+        if (task.assignedToId) {
+          await this.notificationDispatcher.dispatch('task.assigned', {
+            taskId: task.id,
+            assigneeId: task.assignedToId,
+          });
+        }
+        
         createdTasks.push(task);
       }
 
@@ -125,6 +138,12 @@ export class WorkflowEngineService {
             note: `Instance reached end with status: ${endNodeStatus}`,
           },
         });
+        
+        // Notify initiator
+        await this.notificationDispatcher.dispatch('instance.completed', {
+          instanceId: instance.id,
+        });
+
       } else if (nextStepIdsToCreate.size > 0) {
         await prisma.flowInstance.update({
           where: { id: instance.id },

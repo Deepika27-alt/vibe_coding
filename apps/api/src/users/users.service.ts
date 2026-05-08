@@ -3,14 +3,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto, UpdateUserDto, QueryUsersDto } from './dto/user.dto';
 import { UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { Queue } from 'bullmq';
-import { InjectQueue } from '@nestjs/bullmq';
+import { NotificationDispatcher } from '../notifications/notification-dispatcher.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     private readonly prisma: PrismaService,
-    @InjectQueue('email-queue') private emailQueue: Queue,
+    private readonly notificationDispatcher: NotificationDispatcher,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -218,8 +217,8 @@ export class UsersService {
         });
         created++;
 
-        // Add to queue for sending email
-        await this.emailQueue.add('send-invite', {
+        // Dispatch notification for sending email
+        await this.notificationDispatcher.dispatch('user.invited', {
           userId: user.id,
           email: user.email,
           name: user.name,
