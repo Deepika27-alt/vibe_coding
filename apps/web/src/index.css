@@ -44,3 +44,20 @@ code {
   transform: translateY(0);
   transition: opacity 300ms, transform 300ms;
 }
+
+/* Simulation Node Highlight */
+.node-highlight {
+  box-shadow: 0 0 0 4px #3b82f6, 0 0 20px 4px rgba(59, 130, 246, 0.6) !important;
+  border-radius: 12px;
+  transition: box-shadow 0.3s ease-in-out;
+  animation: node-glow 1.5s infinite alternate;
+}
+
+@keyframes node-glow {
+  from {
+    box-shadow: 0 0 0 4px #3b82f6, 0 0 10px 2px rgba(59, 130, 246, 0.4);
+  }
+  to {
+    box-shadow: 0 0 0 6px #3b82f6, 0 0 25px 6px rgba(59, 130, 246, 0.7);
+  }
+}

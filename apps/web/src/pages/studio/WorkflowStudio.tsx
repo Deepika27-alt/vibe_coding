@@ -15,6 +15,7 @@ import Toolbar from './components/Toolbar';
 import StepPalette from './components/StepPalette';
 import FlowCanvas from './components/FlowCanvas';
 import ConfigDrawer from './components/ConfigDrawer';
+import WorkflowSimulator from './components/WorkflowSimulator';
 import { WorkflowNode, WorkflowEdge, NodeConfig, StepType } from './types';
 import { DEFAULT_NODE_DATA } from './constants';
 import axios from '../../api/axios';
@@ -32,6 +33,9 @@ const WorkflowStudioInternal = () => {
   
   const [isSaving, setIsSaving] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [highlightedNodeId, setHighlightedNodeId] = useState<string | null>(null);
+  
   const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' }>({
     open: false,
     message: '',
@@ -205,17 +209,32 @@ const WorkflowStudioInternal = () => {
         onNameChange={setWorkflowName}
         onSave={onSave}
         onPublish={onPublish}
-        onSimulate={() => console.log('Simulate')}
+        onSimulate={() => setIsSimulating(true)}
         isSaving={isSaving}
         isPublishing={isPublishing}
       />
       
-      <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        flex: 1, 
+        overflow: 'hidden',
+        position: 'relative'
+      }}>
         <StepPalette />
         
-        <Box sx={{ flex: 1, position: 'relative', bgcolor: '#f8fafc' }}>
+        <Box sx={{ 
+          flex: 1, 
+          position: 'relative', 
+          bgcolor: '#f8fafc',
+          opacity: isSimulating ? 0.5 : 1,
+          transition: 'opacity 0.3s ease',
+          pointerEvents: isSimulating ? 'none' : 'auto'
+        }}>
           <FlowCanvas 
-            nodes={nodes}
+            nodes={nodes.map(n => ({
+              ...n,
+              className: n.id === highlightedNodeId ? 'node-highlight' : ''
+            }))}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
@@ -227,12 +246,24 @@ const WorkflowStudioInternal = () => {
           />
         </Box>
 
-        {selectedNode && (
+        {selectedNode && !isSimulating && (
           <ConfigDrawer 
             selectedNode={selectedNode}
             onUpdate={updateNodeData}
             onDelete={deleteNode}
             onClose={() => setSelectedNodeId(null)}
+          />
+        )}
+
+        {isSimulating && (
+          <WorkflowSimulator 
+            nodes={nodes}
+            edges={edges}
+            onClose={() => {
+              setIsSimulating(false);
+              setHighlightedNodeId(null);
+            }}
+            onHighlightNode={setHighlightedNodeId}
           />
         )}
       </Box>
