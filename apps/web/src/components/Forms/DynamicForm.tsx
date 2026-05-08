@@ -9,22 +9,12 @@ import {
   Checkbox, 
   FormControlLabel, 
   Typography,
-  Button
+  Button,
+  FormHelperText
 } from '@mui/material';
 import { useForm, Controller } from 'react-hook-form';
 import { CloudUpload as UploadIcon } from '@mui/icons-material';
-
-interface FormField {
-  id: string;
-  label: string;
-  type: 'text' | 'number' | 'date' | 'dropdown' | 'file' | 'checkbox';
-  options?: string[];
-  required?: boolean;
-  visibilityCondition?: {
-    fieldId: string;
-    value: any;
-  };
-}
+import { FormField } from '../../pages/studio/types';
 
 interface DynamicFormProps {
   fields: FormField[];
@@ -37,8 +27,21 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ fields, onSubmit, loading }) 
   const formValues = watch();
 
   const isVisible = (field: FormField) => {
-    if (!field.visibilityCondition) return true;
-    return formValues[field.visibilityCondition.fieldId] === field.visibilityCondition.value;
+    if (!field.visibilityCondition || !field.visibilityCondition.fieldId) return true;
+    
+    const condition = field.visibilityCondition;
+    const dependentValue = formValues[condition.fieldId];
+
+    switch (condition.operator) {
+      case 'equals':
+        return dependentValue === condition.value;
+      case 'not_equals':
+        return dependentValue !== condition.value;
+      case 'is_filled':
+        return dependentValue !== undefined && dependentValue !== '' && dependentValue !== null;
+      default:
+        return true;
+    }
   };
 
   const renderField = (field: FormField) => {
@@ -50,22 +53,46 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ fields, onSubmit, loading }) 
           name={field.id}
           control={control}
           defaultValue={field.type === 'checkbox' ? false : ''}
-          rules={{ required: field.required }}
+          rules={{ 
+            required: field.required,
+            min: field.min,
+            max: field.max,
+            maxLength: field.maxLength,
+            pattern: field.regexPattern ? { value: new RegExp(field.regexPattern), message: 'Invalid format' } : undefined
+          }}
           render={({ field: { onChange, value }, fieldState: { error } }) => {
+            const commonProps = {
+              fullWidth: true,
+              label: field.label,
+              value: value,
+              onChange: onChange,
+              error: !!error,
+              helperText: error ? (error.message || `${field.label} is required`) : (field.helpText || ''),
+              placeholder: field.placeholder,
+            };
+
             switch (field.type) {
               case 'text':
               case 'number':
               case 'date':
                 return (
                   <TextField
-                    fullWidth
-                    label={field.label}
+                    {...commonProps}
                     type={field.type}
-                    value={value}
-                    onChange={onChange}
-                    error={!!error}
-                    helperText={error ? `${field.label} is required` : ''}
                     InputLabelProps={field.type === 'date' ? { shrink: true } : {}}
+                    inputProps={{
+                      min: field.min,
+                      max: field.max,
+                    }}
+                  />
+                );
+              case 'rich-text':
+                return (
+                  <TextField
+                    {...commonProps}
+                    multiline
+                    rows={4}
+                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'white' } }}
                   />
                 );
               case 'dropdown':
@@ -77,33 +104,52 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ fields, onSubmit, loading }) 
                         <MenuItem key={opt} value={opt}>{opt}</MenuItem>
                       ))}
                     </Select>
+                    {(error || field.helpText) && (
+                      <FormHelperText>{error ? `${field.label} is required` : field.helpText}</FormHelperText>
+                    )}
                   </FormControl>
                 );
               case 'checkbox':
                 return (
-                  <FormControlLabel
-                    control={<Checkbox checked={value} onChange={(e) => onChange(e.target.checked)} />}
-                    label={field.label}
-                  />
+                  <Box>
+                    <FormControlLabel
+                      control={<Checkbox checked={value} onChange={(e) => onChange(e.target.checked)} />}
+                      label={field.label}
+                    />
+                    {field.helpText && <Typography variant="caption" display="block" color="text.secondary">{field.helpText}</Typography>}
+                  </Box>
                 );
               case 'file':
                 return (
                   <Box>
                     <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                      {field.label}
+                      {field.label} {field.required && '*'}
                     </Typography>
                     <Button
                       component="label"
                       variant="outlined"
                       startIcon={<UploadIcon />}
                       fullWidth
+                      color={error ? 'error' : 'primary'}
                     >
-                      Upload File
-                      <input type="file" hidden onChange={(e) => onChange(e.target.files?.[0])} />
+                      {value ? (value instanceof File ? value.name : 'File Selected') : 'Upload File'}
+                      <input 
+                        type="file" 
+                        hidden 
+                        accept={field.acceptedTypes}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file && field.maxSizeMB && file.size > field.maxSizeMB * 1024 * 1024) {
+                            alert(`File size exceeds ${field.maxSizeMB}MB`);
+                            return;
+                          }
+                          onChange(file);
+                        }} 
+                      />
                     </Button>
-                    {value && (
-                      <Typography variant="caption" sx={{ mt: 1, display: 'block' }}>
-                        Selected: {value.name}
+                    {(error || field.helpText) && (
+                      <Typography variant="caption" color={error ? 'error' : 'text.secondary'} sx={{ mt: 0.5, display: 'block' }}>
+                        {error ? `${field.label} is required` : field.helpText}
                       </Typography>
                     )}
                   </Box>
