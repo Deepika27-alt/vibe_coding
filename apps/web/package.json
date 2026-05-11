@@ -30,6 +30,7 @@
     "react-hook-form": "^7.75.0",
     "react-router-dom": "^6.16.0",
     "reactflow": "^11.11.4",
+    "recharts": "^3.8.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {

@@ -20,7 +20,8 @@ import {
   People as PeopleIcon,
   Security as RolesIcon,
   Settings as SettingsIcon,
-  AdminPanelSettings as AdminIcon
+  AdminPanelSettings as AdminIcon,
+  Assessment as AnalyticsIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -43,6 +44,7 @@ const Sidebar: React.FC = () => {
     { text: 'Users', icon: <PeopleIcon />, path: '/admin/users' },
     { text: 'Roles', icon: <RolesIcon />, path: '/admin/roles' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' },
+    { text: 'Analytics', icon: <AnalyticsIcon />, path: '/admin/analytics' },
   ];
 
   return (

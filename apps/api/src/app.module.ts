@@ -11,6 +11,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { SLAModule } from './sla/sla.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SLAModule } from './sla/sla.module';
     ScheduleModule.forRoot(),
     NotificationsModule,
     SLAModule,
+    AnalyticsModule,
   ],
   controllers: [],
   providers: [],
