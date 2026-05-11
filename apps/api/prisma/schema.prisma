@@ -150,7 +150,6 @@ model Task {
   dueAt             DateTime?
   sla_reminder_sent Boolean    @default(false)
   escalated         Boolean    @default(false)
-  reminderSent      Boolean    @default(false)
   completedAt       DateTime?
   completedById     String?    @db.Uuid
   createdAt         DateTime   @default(now())
