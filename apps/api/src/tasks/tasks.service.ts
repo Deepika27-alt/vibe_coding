@@ -124,11 +124,18 @@ export class TasksService {
       include: { actor: { select: { name: true, email: true } } }
     });
 
+    const graph = task.instance.definition.graph as any;
+    const nodes = graph?.nodes || [];
+    const availableSendBackSteps = nodes
+      .filter((n: any) => n.id !== task.stepId && !['end', 'condition', 'start'].includes((n.type || '').toLowerCase()))
+      .map((n: any) => ({ id: n.id, name: n.data?.name || n.id }));
+
     return {
       task,
       instanceData: task.instance.data,
       formDefinition: formDefinition || null,
-      auditTrail
+      auditTrail,
+      availableSendBackSteps
     };
   }
 
@@ -145,8 +152,9 @@ export class TasksService {
 
     if (formDef && Array.isArray(formDef.fields)) {
       for (const field of formDef.fields as any[]) {
-        if (field.required && (dto.formData[field.name] === undefined || dto.formData[field.name] === null || dto.formData[field.name] === '')) {
-          throw new BadRequestException(`Field ${field.name} is required`);
+        const fieldKey = field.id || field.name;
+        if (field.required && (dto.formData[fieldKey] === undefined || dto.formData[fieldKey] === null || dto.formData[fieldKey] === '')) {
+          throw new BadRequestException(`Field ${field.label || fieldKey} is required`);
         }
       }
     }
@@ -255,13 +263,8 @@ export class TasksService {
         const targetNode = nodes.find((n: any) => n.id === rejectEdge.target);
         
         if (targetNode) {
-          const taskTypeMap: Record<string, any> = {
-            'Form': 'FORM',
-            'Approval': 'APPROVAL',
-            'Manual': 'MANUAL',
-          };
-
-          if (targetNode.type === 'End') {
+          const typeNormalized = (targetNode.type || '').toLowerCase();
+          if (typeNormalized === 'end') {
              await prisma.flowInstance.update({
                where: { id: task.instanceId },
                data: { currentStepId: 'END', status: targetNode.config?.endStatus || 'REJECTED' }
@@ -319,11 +322,7 @@ export class TasksService {
         throw new BadRequestException('Target step ID not found in workflow graph');
       }
 
-      const taskTypeMap: Record<string, any> = {
-        'Form': 'FORM',
-        'Approval': 'APPROVAL',
-        'Manual': 'MANUAL',
-      };
+      const typeNormalized = (targetNode.type || '').toLowerCase();
 
       await prisma.flowInstance.update({
         where: { id: task.instanceId },

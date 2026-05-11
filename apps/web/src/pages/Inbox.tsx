@@ -21,12 +21,12 @@ import api from '../api/axios';
 import { formatDistanceToNow } from 'date-fns';
 
 interface Task {
-  id: string;
+  taskId: string;
   workflowName: string;
   stepName: string;
   initiatorName: string;
-  dueDate: string;
-  slaStatus: 'GREEN' | 'AMBER' | 'RED';
+  dueAt: string | null;
+  slaStatus: 'on_time' | 'at_risk' | 'breached';
 }
 
 const Inbox: React.FC = () => {
@@ -51,8 +51,8 @@ const Inbox: React.FC = () => {
 
   const getSLAProps = (status: string) => {
     switch (status) {
-      case 'RED': return { label: 'Urgent', color: 'error' as const };
-      case 'AMBER': return { label: 'Due soon', color: 'warning' as const };
+      case 'breached': return { label: 'Overdue', color: 'error' as const };
+      case 'at_risk': return { label: 'At risk', color: 'warning' as const };
       default: return { label: 'On track', color: 'success' as const };
     }
   };
@@ -96,9 +96,9 @@ const Inbox: React.FC = () => {
             <TableBody>
               {tasks.map((task) => (
                 <TableRow
-                  key={task.id}
+                  key={task.taskId}
                   hover
-                  onClick={() => navigate(`/tasks/${task.id}`)}
+                  onClick={() => navigate(`/tasks/${task.taskId}`)}
                   sx={{ cursor: 'pointer', '&:last-child td, &:last-child th': { border: 0 } }}
                 >
                   <TableCell>
@@ -107,7 +107,7 @@ const Inbox: React.FC = () => {
                   </TableCell>
                   <TableCell>{task.initiatorName}</TableCell>
                   <TableCell>
-                    {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
+                    {task.dueAt ? formatDistanceToNow(new Date(task.dueAt), { addSuffix: true }) : 'No deadline'}
                   </TableCell>
                   <TableCell>
                     <Chip

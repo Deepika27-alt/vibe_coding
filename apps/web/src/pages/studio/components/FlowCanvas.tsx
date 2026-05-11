@@ -14,6 +14,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 
 import {
+  StartNode,
   FormNode,
   TaskNode,
   ApprovalNode,
@@ -26,6 +27,7 @@ import { WorkflowNode, WorkflowEdge, NodeConfig } from '../types';
 import { DEFAULT_NODE_DATA } from '../constants';
 
 const nodeTypes = {
+  start: StartNode,
   form: FormNode,
   task: TaskNode,
   approval: ApprovalNode,

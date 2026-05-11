@@ -4,6 +4,7 @@ import BaseNode from './BaseNode';
 import { NodeConfig } from '../../types';
 import { Box, Typography } from '@mui/material';
 
+export const StartNode = (props: NodeProps<NodeConfig>) => <BaseNode {...props} type="start" />;
 export const FormNode = (props: NodeProps<NodeConfig>) => <BaseNode {...props} type="form" />;
 export const TaskNode = (props: NodeProps<NodeConfig>) => <BaseNode {...props} type="task" />;
 export const ApprovalNode = (props: NodeProps<NodeConfig>) => <BaseNode {...props} type="approval" />;

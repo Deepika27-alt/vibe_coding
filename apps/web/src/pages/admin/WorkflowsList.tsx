@@ -100,7 +100,7 @@ const WorkflowsList: React.FC = () => {
         />
       )
     },
-    { field: 'createdAt', headerName: 'Created', width: 180, valueFormatter: (params) => new Date(params as string).toLocaleString() },
+    { field: 'createdAt', headerName: 'Created', width: 180, valueFormatter: (value) => value ? new Date(value).toLocaleString() : '' },
     {
       field: 'actions',
       headerName: 'Actions',

@@ -36,19 +36,31 @@ import { format } from 'date-fns';
 
 interface AuditEvent {
   id: string;
-  type: string;
-  actor: string;
-  timestamp: string;
-  comment?: string;
+  action: string;
+  actor: {
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  note?: string;
 }
 
 interface TaskDetail {
-  id: string;
-  workflowName: string;
-  stepName: string;
-  stepType: 'FORM' | 'APPROVAL' | 'MANUAL';
-  slaDeadline: string;
-  formDefinition?: any;
+  task: {
+    id: string;
+    stepName?: string;
+    stepId: string;
+    type: 'FORM' | 'APPROVAL' | 'MANUAL';
+    dueAt: string | null;
+    instance: {
+      definition: {
+        name: string;
+      }
+    }
+  };
+  formDefinition?: {
+    fields: any[];
+  };
   auditTrail: AuditEvent[];
   availableSendBackSteps?: { id: string, name: string }[];
 }
@@ -82,10 +94,21 @@ const TaskDetail: React.FC = () => {
   }, [id, navigate]);
 
   const handleAction = async (type: string, data?: any) => {
+    if (!task?.task.id) return;
     setSubmitting(true);
     try {
-      await api.post(`/tasks/${id}/action`, {
-        action: type,
+      const actionMap: Record<string, string> = {
+        'SUBMIT': 'submit',
+        'APPROVE': 'approve',
+        'REJECT': 'reject',
+        'SEND_BACK': 'sendback',
+        'COMPLETE': 'complete'
+      };
+
+      const endpoint = actionMap[type];
+      if (!endpoint) throw new Error(`Invalid action type: ${type}`);
+
+      await api.post(`/tasks/${task.task.id}/${endpoint}`, {
         comment,
         targetStepId: targetStep,
         formData: data
@@ -111,13 +134,13 @@ const TaskDetail: React.FC = () => {
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
               <Box>
                 <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1 }}>
-                  {task.workflowName}
+                  {task.task.instance.definition.name}
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>{task.stepName}</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700 }}>{task.task.stepName || task.task.stepId}</Typography>
               </Box>
               <Box sx={{ textAlign: 'right' }}>
                 <Chip 
-                  label={task.stepType} 
+                  label={task.task.type} 
                   color="primary" 
                   variant="outlined" 
                   size="small" 
@@ -126,7 +149,7 @@ const TaskDetail: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', color: 'error.main', gap: 0.5 }}>
                   <AccessTime fontSize="small" />
                   <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    SLA: {format(new Date(task.slaDeadline), 'MMM dd, HH:mm')}
+                    SLA: {task.task.dueAt ? format(new Date(task.task.dueAt), 'MMM dd, HH:mm') : 'No deadline'}
                   </Typography>
                 </Box>
               </Box>
@@ -134,14 +157,14 @@ const TaskDetail: React.FC = () => {
 
             <Divider sx={{ mb: 4 }} />
 
-            {task.stepType === 'FORM' && task.formDefinition && (
+            {task.task.type === 'FORM' && task.formDefinition && (
               <DynamicForm 
-                fields={task.formDefinition.fields} 
+                fields={task.formDefinition.fields || []} 
                 onSubmit={(data) => handleAction('SUBMIT', data)} 
               />
             )}
 
-            {task.stepType === 'MANUAL' && (
+            {task.task.type === 'MANUAL' && (
               <Box sx={{ py: 4, textAlign: 'center' }}>
                 <Typography variant="body1" sx={{ mb: 4 }}>
                   Please complete this manual step and click the button below to proceed.
@@ -150,7 +173,7 @@ const TaskDetail: React.FC = () => {
             )}
 
             <Box sx={{ mt: 6, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-              {task.stepType === 'APPROVAL' ? (
+              {task.task.type === 'APPROVAL' ? (
                 <>
                   <Button 
                     variant="outlined" 
@@ -178,7 +201,7 @@ const TaskDetail: React.FC = () => {
                     Approve
                   </Button>
                 </>
-              ) : task.stepType === 'FORM' ? (
+              ) : task.task.type === 'FORM' ? (
                 <Button 
                   variant="contained" 
                   type="submit" 
@@ -211,9 +234,9 @@ const TaskDetail: React.FC = () => {
             </Box>
 
             <Box sx={{ position: 'relative' }}>
-              {task.auditTrail.map((event, index) => (
+              {(task.auditTrail || []).map((event, index) => (
                 <Box key={event.id} sx={{ display: 'flex', gap: 2, mb: 4, position: 'relative' }}>
-                  {index !== task.auditTrail.length - 1 && (
+                  {index !== (task.auditTrail || []).length - 1 && (
                     <Box 
                       sx={{ 
                         position: 'absolute', 
@@ -226,19 +249,19 @@ const TaskDetail: React.FC = () => {
                     />
                   )}
                   <Avatar sx={{ bgcolor: alpha('#6366f1', 0.1), color: 'primary.main', width: 40, height: 40 }}>
-                    {event.type === 'START' ? <PlayArrow /> : <Person />}
+                    {event.action === 'STARTED' ? <PlayArrow /> : <Person />}
                   </Avatar>
                   <Box sx={{ flex: 1 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{event.actor}</Typography>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{event.actor?.name || 'System'}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {format(new Date(event.timestamp), 'HH:mm')}
+                        {format(new Date(event.createdAt), 'HH:mm')}
                       </Typography>
                     </Box>
                     <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main', mb: 0.5 }}>
-                      {event.type}
+                      {event.action}
                     </Typography>
-                    {event.comment && (
+                    {event.note && (
                       <Typography 
                         variant="body2" 
                         sx={{ 
@@ -249,11 +272,11 @@ const TaskDetail: React.FC = () => {
                           border: '1px dashed #e2e8f0'
                         }}
                       >
-                        {event.comment}
+                        {event.note}
                       </Typography>
                     )}
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                      {format(new Date(event.timestamp), 'MMM dd, yyyy')}
+                      {format(new Date(event.createdAt), 'MMM dd, yyyy')}
                     </Typography>
                   </Box>
                 </Box>
@@ -288,7 +311,7 @@ const TaskDetail: React.FC = () => {
                   label="Target Step"
                   onChange={(e) => setTargetStep(e.target.value)}
                 >
-                  {task.availableSendBackSteps?.map(step => (
+                  {(task.availableSendBackSteps || []).map(step => (
                     <MenuItem key={step.id} value={step.id}>{step.name}</MenuItem>
                   ))}
                 </Select>

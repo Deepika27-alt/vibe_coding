@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from '../../../api/axios';
 import { 
   Box, 
   Typography, 
@@ -30,6 +31,24 @@ interface ConfigDrawerProps {
 
 const ConfigDrawer = ({ selectedNode, onUpdate, onDelete, onClose }: ConfigDrawerProps) => {
   const [isBuildingForm, setIsBuildingForm] = useState(false);
+  const [roles, setRoles] = useState<{ id: string, name: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string, name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [rolesRes, usersRes] = await Promise.all([
+          axios.get('/roles'),
+          axios.get('/users')
+        ]);
+        setRoles(Array.isArray(rolesRes.data) ? rolesRes.data : rolesRes.data.data || []);
+        setUsers(Array.isArray(usersRes.data) ? usersRes.data : usersRes.data.data || []);
+      } catch (err) {
+        console.error('Failed to fetch roles/users', err);
+      }
+    };
+    fetchData();
+  }, []);
 
   if (!selectedNode) return null;
 
@@ -56,6 +75,7 @@ const ConfigDrawer = ({ selectedNode, onUpdate, onDelete, onClose }: ConfigDrawe
     }
 
     switch (type) {
+      case 'form':
       case 'task':
       case 'approval':
         return (
@@ -73,41 +93,64 @@ const ConfigDrawer = ({ selectedNode, onUpdate, onDelete, onClose }: ConfigDrawe
             </FormControl>
 
             <FormControl fullWidth sx={{ mt: 2 }}>
-              <FormLabel sx={{ fontWeight: 600, mb: 1 }}>Select {data.assigneeType || 'Role'}</FormLabel>
+              <FormLabel sx={{ fontWeight: 600, mb: 1 }}>Select {data.assigneeType === 'user' ? 'Specific User' : 'Role'}</FormLabel>
               <Select
                 size="small"
                 value={data.assigneeId || ''}
                 onChange={(e) => handleChange('assigneeId', e.target.value)}
               >
-                <MenuItem value="admin">Administrator</MenuItem>
-                <MenuItem value="manager">Manager</MenuItem>
-                <MenuItem value="hr">HR Representative</MenuItem>
-                <MenuItem value="finance">Finance Officer</MenuItem>
+                {data.assigneeType === 'user' ? (
+                  (users || []).map(u => <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>)
+                ) : (
+                  (roles || []).map(r => <MenuItem key={r.id} value={r.id}>{r.name}</MenuItem>)
+                )}
               </Select>
             </FormControl>
 
-            <TextField
-              fullWidth
-              label="SLA (Hours)"
-              type="number"
-              size="small"
-              sx={{ mt: 3 }}
-              value={data.sla || ''}
-              onChange={(e) => handleChange('sla', parseInt(e.target.value))}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">hrs</InputAdornment>,
-              }}
-            />
+            {type === 'form' && (
+              <Box sx={{ mt: 3 }}>
+                <Button 
+                  fullWidth 
+                  variant="outlined" 
+                  onClick={() => setIsBuildingForm(true)}
+                  sx={{ py: 1.5, borderRadius: 2 }}
+                >
+                  Open Form Builder
+                </Button>
+                {data.fields && data.fields.length > 0 && (
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
+                    {data.fields.length} field(s) configured
+                  </Typography>
+                )}
+              </Box>
+            )}
 
-            <TextField
-              fullWidth
-              label="Escalation Target"
-              placeholder="e.g. manager"
-              size="small"
-              sx={{ mt: 3 }}
-              value={data.escalationTarget || ''}
-              onChange={(e) => handleChange('escalationTarget', e.target.value)}
-            />
+            {(type === 'task' || type === 'approval') && (
+              <>
+                <TextField
+                  fullWidth
+                  label="SLA (Hours)"
+                  type="number"
+                  size="small"
+                  sx={{ mt: 3 }}
+                  value={data.sla || ''}
+                  onChange={(e) => handleChange('sla', parseInt(e.target.value))}
+                  InputProps={{
+                    endAdornment: <InputAdornment position="end">hrs</InputAdornment>,
+                  }}
+                />
+
+                <TextField
+                  fullWidth
+                  label="Escalation Target"
+                  placeholder="e.g. manager"
+                  size="small"
+                  sx={{ mt: 3 }}
+                  value={data.escalationTarget || ''}
+                  onChange={(e) => handleChange('escalationTarget', e.target.value)}
+                />
+              </>
+            )}
           </>
         );
 
@@ -220,24 +263,7 @@ const ConfigDrawer = ({ selectedNode, onUpdate, onDelete, onClose }: ConfigDrawe
           </>
         );
 
-      case 'form':
-        return (
-          <Box sx={{ mt: 3 }}>
-            <Button 
-              fullWidth 
-              variant="outlined" 
-              onClick={() => setIsBuildingForm(true)}
-              sx={{ py: 1.5, borderRadius: 2 }}
-            >
-              Open Form Builder
-            </Button>
-            {data.fields && data.fields.length > 0 && (
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'center' }}>
-                {data.fields.length} field(s) configured
-              </Typography>
-            )}
-          </Box>
-        );
+
 
       default:
         return null;

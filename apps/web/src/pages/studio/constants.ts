@@ -4,11 +4,13 @@ import {
   CheckCircle2, 
   Zap, 
   GitBranch, 
-  Flag 
+  Flag,
+  Play
 } from 'lucide-react';
 import { StepType, NodeConfig } from './types';
 
 export const STEP_PALETTE = [
+  { type: 'start', label: 'Start', icon: Play, color: '#059669' }, // emerald
   { type: 'form', label: 'Form', icon: FileText, color: '#3b82f6' }, // blue
   { type: 'task', label: 'Task', icon: CheckSquare, color: '#10b981' }, // green
   { type: 'approval', label: 'Approval', icon: CheckCircle2, color: '#f59e0b' }, // amber
@@ -18,6 +20,7 @@ export const STEP_PALETTE = [
 ] as const;
 
 export const NODE_TYPES = {
+  start: 'start',
   form: 'form',
   task: 'task',
   approval: 'approval',
@@ -27,7 +30,8 @@ export const NODE_TYPES = {
 } as const;
 
 export const DEFAULT_NODE_DATA: Record<StepType, NodeConfig> = {
-  form: { name: 'New Form', description: '' },
+  start: { name: 'Start', description: 'Entry point of the workflow' },
+  form: { name: 'New Form', description: '', assigneeType: 'role' },
   task: { name: 'New Task', description: '', assigneeType: 'role' },
   approval: { name: 'New Approval', description: '', assigneeType: 'role' },
   action: { name: 'New Action', description: '', actionType: 'email' },

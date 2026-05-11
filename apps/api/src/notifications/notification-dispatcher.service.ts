@@ -48,7 +48,7 @@ export class NotificationDispatcher {
     }
   }
 
-  private async handleTaskAssigned(data: { taskId: string, assigneeId: string }, appUrl: string) {
+  private async handleTaskAssigned(data: { taskId: string, assigneeId?: string }, appUrl: string) {
     const { taskId } = data;
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
@@ -57,20 +57,42 @@ export class NotificationDispatcher {
           include: { definition: true }
         },
         assignedTo: true,
+        assignedRole: true,
       }
     });
 
-    if (!task || !task.assignedTo) return;
+    if (!task) return;
 
     const subject = `New Task Assigned: ${task.instance.definition.name}`;
     const taskLink = `${appUrl}/tasks/${taskId}`;
-    const content = `
-      <p>Hello ${task.assignedTo.name},</p>
-      <p>You have a new <strong>${task.type}</strong> step in the workflow: <strong>${task.instance.definition.name}</strong>.</p>
-      <a href="${taskLink}">View Task</a>
-    `;
 
-    await this.emailService.sendEmail(task.assignedTo.email, subject, content);
+    const sendToUser = async (user: { name: string, email: string }) => {
+      const content = `
+        <p>Hello ${user.name},</p>
+        <p>You have a new <strong>${task.type}</strong> step in the workflow: <strong>${task.instance.definition.name}</strong>.</p>
+        <a href="${taskLink}">View Task</a>
+      `;
+      await this.emailService.sendEmail(user.email, subject, content);
+    };
+
+    if (task.assignedTo) {
+      await sendToUser(task.assignedTo);
+    } else if (task.assignedRole && task.assignedRoleId) {
+      // Find all users with this role
+      const usersWithRole = await this.prisma.user.findMany({
+        where: {
+          roles: {
+            some: {
+              roleId: task.assignedRoleId
+            }
+          }
+        }
+      });
+
+      for (const user of usersWithRole) {
+        await sendToUser(user);
+      }
+    }
   }
 
   private async handleTaskReminder(data: { taskId: string }, appUrl: string) {

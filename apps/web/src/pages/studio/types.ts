@@ -1,6 +1,6 @@
 import { Node, Edge } from 'reactflow';
 
-export type StepType = 'form' | 'task' | 'approval' | 'action' | 'condition' | 'end';
+export type StepType = 'start' | 'form' | 'task' | 'approval' | 'action' | 'condition' | 'end';
 
 export type FieldType = 'text' | 'number' | 'date' | 'dropdown' | 'checkbox' | 'file' | 'rich-text';
 

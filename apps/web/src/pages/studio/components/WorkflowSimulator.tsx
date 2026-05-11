@@ -44,6 +44,7 @@ interface WorkflowSimulatorProps {
 }
 
 const STEP_ICONS: Record<string, any> = {
+  start: Play,
   form: FileText,
   task: CheckSquare,
   approval: CheckCircle2,
@@ -319,6 +320,17 @@ const WorkflowSimulator: React.FC<WorkflowSimulatorProps> = ({
 
                 {/* Step Specific Content */}
                 <Box>
+                  {currentStep?.type === 'start' && (
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      onClick={handleNext}
+                      sx={{ py: 1.5, borderRadius: 2, fontWeight: 600 }}
+                    >
+                      Start Workflow
+                    </Button>
+                  )}
+
                   {currentStep?.type === 'form' && (
                     <Box sx={{ mt: 2 }}>
                       <DynamicForm 

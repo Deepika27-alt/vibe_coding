@@ -26,6 +26,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import axios from '../../api/axios';
 
 const DRAWER_WIDTH = 280;
 
@@ -33,10 +34,29 @@ const Sidebar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const theme = useTheme();
+  const [taskCount, setTaskCount] = React.useState(0);
   const { logout, user } = useAuth();
 
+  React.useEffect(() => {
+    const fetchTaskCount = async () => {
+      try {
+        const response = await axios.get('/tasks/pending');
+        setTaskCount(response.data.length);
+      } catch (err) {
+        console.error('Failed to fetch task count', err);
+      }
+    };
+
+    if (user) {
+      fetchTaskCount();
+      // Polling every minute
+      const interval = setInterval(fetchTaskCount, 60000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
+
   const menuItems = [
-    { text: 'Inbox', icon: <InboxIcon />, path: '/inbox', badge: 3 },
+    { text: 'Inbox', icon: <InboxIcon />, path: '/inbox', badge: taskCount },
     { text: 'My Requests', icon: <RequestIcon />, path: '/requests' },
     { text: 'Catalogue', icon: <CatalogueIcon />, path: '/catalogue' },
   ];

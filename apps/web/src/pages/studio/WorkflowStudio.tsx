@@ -71,9 +71,9 @@ const WorkflowStudioInternal = () => {
       setNodes([
         {
           id: startNodeId,
-          type: 'form',
-          position: { x: 250, y: 100 },
-          data: { ...DEFAULT_NODE_DATA.form, name: 'Start Form' },
+          type: 'start',
+          position: { x: 250, y: 150 },
+          data: { ...DEFAULT_NODE_DATA.start },
         },
       ]);
     }

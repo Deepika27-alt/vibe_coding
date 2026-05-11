@@ -51,36 +51,47 @@ export class WorkflowEngineService {
         }
 
         if (node.type.toLowerCase() === 'condition') {
+          const { conditionField, conditionOperator, conditionValue, branches } = node.data || {};
+          const instanceVal = (instance.data as any)[conditionField];
+          
+          let matchedBranch = 'False';
+          const val = instanceVal;
+          const target = conditionValue;
+
+          let isMatch = false;
+          if (conditionOperator === 'equals' && val == target) isMatch = true;
+          else if (conditionOperator === 'contains' && String(val).includes(target)) isMatch = true;
+          else if (conditionOperator === 'gt' && Number(val) > Number(target)) isMatch = true;
+          else if (conditionOperator === 'lt' && Number(val) < Number(target)) isMatch = true;
+          else if (conditionOperator === 'empty' && (!val || val === '')) isMatch = true;
+
+          matchedBranch = isMatch ? (branches?.[0] || 'True') : (branches?.[1] || 'False');
+
           const conditionEdges = edges.filter((e: any) => e.source === node.id);
-          let matchedEdge = null;
-          let defaultEdge = null;
+          const edgeToFollow = conditionEdges.find((e: any) => e.sourceHandle === matchedBranch) || 
+                               conditionEdges.find((e: any) => e.label === matchedBranch) ||
+                               conditionEdges[0];
 
-          for (const edge of conditionEdges) {
-            if (!edge.condition) {
-              defaultEdge = edge;
-              continue;
-            }
-            const { field, operator, value } = edge.condition;
-            const instanceVal = (instance.data as any)[field];
-            
-            let isMatch = false;
-            if (operator === '==' && instanceVal == value) isMatch = true;
-            else if (operator === '!=' && instanceVal != value) isMatch = true;
-            else if (operator === '>' && instanceVal > value) isMatch = true;
-            else if (operator === '<' && instanceVal < value) isMatch = true;
-            else if (operator === '>=' && instanceVal >= value) isMatch = true;
-            else if (operator === '<=' && instanceVal <= value) isMatch = true;
-            
-            if (isMatch) {
-              matchedEdge = edge;
-              break;
-            }
-          }
-
-          const edgeToFollow = matchedEdge || defaultEdge;
           if (edgeToFollow) {
             currentStepsToProcess.push(edgeToFollow.target);
           }
+        } else if (node.type.toLowerCase() === 'action') {
+          // Automated action execution
+          const { actionType, actionConfig } = node.data || {};
+          
+          // Log the action for now
+          console.log(`Executing automated action: ${actionType}`, actionConfig);
+          
+          if (actionType === 'email') {
+            await this.notificationDispatcher.dispatch('task.action_executed', {
+              instanceId: instance.id,
+              actionNote: `Email sent using template: ${actionConfig?.templateId}`,
+            });
+          }
+
+          // Advance to next step automatically
+          const outgoingEdges = edges.filter((e: any) => e.source === node.id);
+          outgoingEdges.forEach((e: any) => currentStepsToProcess.push(e.target));
         } else {
           nextStepIdsToCreate.add(node.id);
         }
@@ -154,9 +165,11 @@ export class WorkflowEngineService {
 
     const now = new Date();
     let dueAt: Date | null = null;
-    const sla = node.sla || node.config?.sla;
+    const sla = node.data?.sla || node.config?.sla;
 
-    if (sla && sla.durationHours) {
+    if (typeof sla === 'number') {
+      dueAt = new Date(now.getTime() + sla * 60 * 60 * 1000);
+    } else if (sla && sla.durationHours) {
       dueAt = new Date(now.getTime() + sla.durationHours * 60 * 60 * 1000);
     }
 
@@ -166,13 +179,13 @@ export class WorkflowEngineService {
         stepId: node.id,
         type: taskType,
         status: 'PENDING',
-        assignedRoleId: node.assignedRoleId || null,
-        assignedToId: node.assignedToId || null,
+        assignedRoleId: node.data?.assigneeType === 'role' ? node.data?.assigneeId : null,
+        assignedToId: node.data?.assigneeType === 'user' ? node.data?.assigneeId : null,
         dueAt,
       },
     });
 
-    if (sla && (sla.targetUserId || sla.targetRoleId)) {
+    if (sla && (sla.targetUserId || sla.targetRoleId || node.data?.escalationTarget)) {
       const bufferHours = sla.bufferHours || 2;
       const notifyAt = dueAt 
         ? new Date(dueAt.getTime() - bufferHours * 60 * 60 * 1000)

@@ -31,7 +31,7 @@ const BaseNode = ({ data, selected, type, children }: BaseNodeProps) => {
       }}
     >
       {/* Top Handle */}
-      {type !== 'form' && (
+      {type !== 'start' && (
         <Handle
           type="target"
           position={Position.Top}
