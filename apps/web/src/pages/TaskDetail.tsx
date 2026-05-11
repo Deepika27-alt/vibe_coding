@@ -18,6 +18,8 @@ import {
   Select,
   MenuItem,
   CircularProgress,
+  Snackbar,
+  Alert,
   alpha
 } from '@mui/material';
 import { 
@@ -55,6 +57,7 @@ interface TaskDetail {
     instance: {
       definition: {
         name: string;
+        graph: any;
       }
     }
   };
@@ -71,6 +74,8 @@ const TaskDetail: React.FC = () => {
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   
   // Action dialog states
   const [actionType, setActionType] = useState<'REJECT' | 'SEND_BACK' | null>(null);
@@ -84,7 +89,8 @@ const TaskDetail: React.FC = () => {
         setTask(response.data);
       } catch (err) {
         console.error('Failed to fetch task', err);
-        navigate('/inbox');
+        setError('Failed to load task details');
+        setTimeout(() => navigate('/inbox'), 3000);
       } finally {
         setLoading(false);
       }
@@ -96,6 +102,7 @@ const TaskDetail: React.FC = () => {
   const handleAction = async (type: string, data?: any) => {
     if (!task?.task.id) return;
     setSubmitting(true);
+    setError(null);
     try {
       const actionMap: Record<string, string> = {
         'SUBMIT': 'submit',
@@ -113,17 +120,34 @@ const TaskDetail: React.FC = () => {
         targetStepId: targetStep,
         formData: data
       });
-      navigate('/inbox');
-    } catch (err) {
+      setSuccess(true);
+      setTimeout(() => navigate('/inbox'), 1000);
+    } catch (err: any) {
       console.error('Action failed', err);
+      setError(err.response?.data?.message || 'Action failed. Please check the form and try again.');
     } finally {
       setSubmitting(false);
       setActionType(null);
     }
   };
 
+  const formatDate = (dateStr: any, formatStr: string) => {
+    try {
+      if (!dateStr) return 'N/A';
+      const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+      return format(date, formatStr);
+    } catch (e) {
+      return 'Invalid Date';
+    }
+  };
+
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', p: 8 }}><CircularProgress /></Box>;
   if (!task) return null;
+
+  // Extract step name from graph if not provided
+  const graph = task.task.instance.definition.graph as any;
+  const node = graph?.nodes?.find((n: any) => n.id === task.task.stepId);
+  const stepName = node?.data?.label || node?.name || task.task.stepId;
 
   return (
     <Box>
@@ -136,7 +160,7 @@ const TaskDetail: React.FC = () => {
                 <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 1 }}>
                   {task.task.instance.definition.name}
                 </Typography>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>{task.task.stepName || task.task.stepId}</Typography>
+                <Typography variant="h4" sx={{ fontWeight: 700 }}>{stepName}</Typography>
               </Box>
               <Box sx={{ textAlign: 'right' }}>
                 <Chip 
@@ -149,7 +173,7 @@ const TaskDetail: React.FC = () => {
                 <Box sx={{ display: 'flex', alignItems: 'center', color: 'error.main', gap: 0.5 }}>
                   <AccessTime fontSize="small" />
                   <Typography variant="caption" sx={{ fontWeight: 700 }}>
-                    SLA: {task.task.dueAt ? format(new Date(task.task.dueAt), 'MMM dd, HH:mm') : 'No deadline'}
+                    SLA: {formatDate(task.task.dueAt, 'MMM dd, HH:mm')}
                   </Typography>
                 </Box>
               </Box>
@@ -255,7 +279,7 @@ const TaskDetail: React.FC = () => {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>{event.actor?.name || 'System'}</Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {format(new Date(event.createdAt), 'HH:mm')}
+                        {formatDate(event.createdAt, 'HH:mm')}
                       </Typography>
                     </Box>
                     <Typography variant="body2" sx={{ fontWeight: 600, color: 'primary.main', mb: 0.5 }}>
@@ -276,7 +300,7 @@ const TaskDetail: React.FC = () => {
                       </Typography>
                     )}
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-                      {format(new Date(event.createdAt), 'MMM dd, yyyy')}
+                      {formatDate(event.createdAt, 'MMM dd, yyyy')}
                     </Typography>
                   </Box>
                 </Box>
@@ -331,6 +355,18 @@ const TaskDetail: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
+        <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar open={success} autoHideDuration={2000}>
+        <Alert severity="success" sx={{ width: '100%' }}>
+          Action completed successfully!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

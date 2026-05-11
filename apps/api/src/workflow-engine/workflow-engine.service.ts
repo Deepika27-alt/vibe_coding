@@ -8,7 +8,7 @@ export class WorkflowEngineService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationDispatcher: NotificationDispatcher,
-  ) {}
+  ) { }
 
   async advanceInstance(instanceId: string, completedTaskId: string) {
     return this.prisma.$transaction(async (prisma) => {
@@ -39,7 +39,7 @@ export class WorkflowEngineService {
       while (currentStepsToProcess.length > 0) {
         const stepId = currentStepsToProcess.pop();
         const node = nodes.find((n: any) => n.id === stepId);
-        
+
         if (!node) continue;
 
         if (node.type.toLowerCase() === 'end') {
@@ -53,7 +53,7 @@ export class WorkflowEngineService {
         if (node.type.toLowerCase() === 'condition') {
           const { conditionField, conditionOperator, conditionValue, branches } = node.data || {};
           const instanceVal = (instance.data as any)[conditionField];
-          
+
           let matchedBranch = 'False';
           const val = instanceVal;
           const target = conditionValue;
@@ -68,9 +68,9 @@ export class WorkflowEngineService {
           matchedBranch = isMatch ? (branches?.[0] || 'True') : (branches?.[1] || 'False');
 
           const conditionEdges = edges.filter((e: any) => e.source === node.id);
-          const edgeToFollow = conditionEdges.find((e: any) => e.sourceHandle === matchedBranch) || 
-                               conditionEdges.find((e: any) => e.label === matchedBranch) ||
-                               conditionEdges[0];
+          const edgeToFollow = conditionEdges.find((e: any) => e.sourceHandle === matchedBranch) ||
+            conditionEdges.find((e: any) => e.label === matchedBranch) ||
+            conditionEdges[0];
 
           if (edgeToFollow) {
             currentStepsToProcess.push(edgeToFollow.target);
@@ -78,10 +78,10 @@ export class WorkflowEngineService {
         } else if (node.type.toLowerCase() === 'action') {
           // Automated action execution
           const { actionType, actionConfig } = node.data || {};
-          
+
           // Log the action for now
           console.log(`Executing automated action: ${actionType}`, actionConfig);
-          
+
           if (actionType === 'email') {
             await this.notificationDispatcher.dispatch('task.action_executed', {
               instanceId: instance.id,
@@ -125,7 +125,7 @@ export class WorkflowEngineService {
             note: `Instance reached end with status: ${endNodeStatus}`,
           },
         });
-        
+
         // Notify initiator
         await this.notificationDispatcher.dispatch('instance.completed', {
           instanceId: instance.id,
@@ -187,7 +187,7 @@ export class WorkflowEngineService {
 
     if (sla && (sla.targetUserId || sla.targetRoleId || node.data?.escalationTarget)) {
       const bufferHours = sla.bufferHours || 2;
-      const notifyAt = dueAt 
+      const notifyAt = dueAt
         ? new Date(dueAt.getTime() - bufferHours * 60 * 60 * 1000)
         : new Date(now.getTime());
 

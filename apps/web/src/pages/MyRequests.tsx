@@ -20,10 +20,12 @@ import { format } from 'date-fns';
 
 interface Request {
   id: string;
-  workflowName: string;
-  status: 'PENDING' | 'COMPLETED' | 'REJECTED' | 'CANCELLED';
-  startedDate: string;
-  lastUpdated: string;
+  definition: {
+    name: string;
+  };
+  status: 'ACTIVE' | 'COMPLETED' | 'REJECTED' | 'CANCELLED' | 'ESCALATED';
+  createdAt: string;
+  updatedAt: string;
 }
 
 const MyRequests: React.FC = () => {
@@ -33,7 +35,7 @@ const MyRequests: React.FC = () => {
   useEffect(() => {
     const fetchRequests = async () => {
       try {
-        const response = await api.get('/instances/my-requests');
+        const response = await api.get('/instances');
         setRequests(response.data);
       } catch (err) {
         console.error('Failed to fetch requests', err);
@@ -50,7 +52,17 @@ const MyRequests: React.FC = () => {
       case 'COMPLETED': return 'success';
       case 'REJECTED': return 'error';
       case 'CANCELLED': return 'default';
+      case 'ESCALATED': return 'warning';
       default: return 'primary';
+    }
+  };
+
+  const formatDate = (dateStr: string, formatStr: string) => {
+    try {
+      if (!dateStr) return 'N/A';
+      return format(new Date(dateStr), formatStr);
+    } catch (e) {
+      return 'Invalid Date';
     }
   };
 
@@ -74,7 +86,7 @@ const MyRequests: React.FC = () => {
           <TableBody>
             {requests.map((req) => (
               <TableRow key={req.id} hover>
-                <TableCell sx={{ fontWeight: 600 }}>{req.workflowName}</TableCell>
+                <TableCell sx={{ fontWeight: 600 }}>{req.definition?.name || 'Unknown Workflow'}</TableCell>
                 <TableCell>
                   <Chip
                     label={req.status}
@@ -83,8 +95,8 @@ const MyRequests: React.FC = () => {
                     sx={{ fontWeight: 600, borderRadius: 1 }}
                   />
                 </TableCell>
-                <TableCell>{format(new Date(req.startedDate), 'MMM dd, yyyy')}</TableCell>
-                <TableCell>{format(new Date(req.lastUpdated), 'MMM dd, yyyy HH:mm')}</TableCell>
+                <TableCell>{formatDate(req.createdAt, 'MMM dd, yyyy')}</TableCell>
+                <TableCell>{formatDate(req.updatedAt, 'MMM dd, yyyy HH:mm')}</TableCell>
                 <TableCell align="right">
                   <Tooltip title="View History">
                     <IconButton size="small">

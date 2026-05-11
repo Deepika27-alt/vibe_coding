@@ -13,6 +13,8 @@ import {
   DialogContentText,
   DialogActions,
   CircularProgress,
+  Snackbar,
+  Alert,
   alpha
 } from '@mui/material';
 import { RocketLaunch, Apartment } from '@mui/icons-material';
@@ -33,6 +35,8 @@ const Catalogue: React.FC = () => {
   const [confirmDialog, setConfirmDialog] = useState<Workflow | null>(null);
   const navigate = useNavigate();
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchWorkflows = async () => {
       try {
@@ -40,6 +44,7 @@ const Catalogue: React.FC = () => {
         setWorkflows(response.data);
       } catch (err) {
         console.error('Failed to fetch workflows', err);
+        setError('Failed to load workflow catalogue');
       } finally {
         setLoading(false);
       }
@@ -51,6 +56,7 @@ const Catalogue: React.FC = () => {
   const handleStart = async () => {
     if (!confirmDialog) return;
     setStarting(true);
+    setError(null);
     try {
       const response = await api.post('/instances', { workflowDefinitionId: confirmDialog.id });
       setConfirmDialog(null);
@@ -59,8 +65,9 @@ const Catalogue: React.FC = () => {
       } else {
         navigate('/requests');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to start instance', err);
+      setError(err.response?.data?.message || 'Failed to start workflow instance');
     } finally {
       setStarting(false);
     }
@@ -135,6 +142,12 @@ const Catalogue: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar open={!!error} autoHideDuration={6000} onClose={() => setError(null)}>
+        <Alert onClose={() => setError(null)} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

@@ -86,6 +86,7 @@ const DynamicForm: React.FC<DynamicFormProps> = ({ fields, onSubmit, loading }) 
                     }}
                   />
                 );
+              case 'textarea':
               case 'rich-text':
                 return (
                   <TextField
