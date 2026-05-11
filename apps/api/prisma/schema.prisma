@@ -190,11 +190,12 @@ enum AuditAction {
   ESCALATED
   CANCELLED
   COMPLETED
+  EXPORTED
 }
 
 model AuditEvent {
   id         String      @id @default(uuid()) @db.Uuid
-  instanceId String      @db.Uuid
+  instanceId String?     @db.Uuid
   actorId    String      @db.Uuid
   action     AuditAction
   stepId     String?
@@ -202,8 +203,8 @@ model AuditEvent {
   note       String?
   createdAt  DateTime    @default(now())
 
-  instance FlowInstance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  actor    User         @relation("AuditActor", fields: [actorId], references: [id])
+  instance FlowInstance? @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  actor    User          @relation("AuditActor", fields: [actorId], references: [id])
 
   @@index([instanceId])
   @@index([actorId])

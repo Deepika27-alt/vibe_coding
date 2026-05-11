@@ -12,6 +12,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { SLAModule } from './sla/sla.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     NotificationsModule,
     SLAModule,
     AnalyticsModule,
+    AuditModule,
   ],
   controllers: [],
   providers: [],

@@ -15,7 +15,7 @@ import {
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
-  @Get()
+  @Get('pending')
   findInbox(@CurrentUser() user: any) {
     return this.tasksService.findUserInbox(user);
   }

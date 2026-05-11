@@ -12,6 +12,7 @@ import RolesList from './pages/admin/RolesList';
 import RoleEdit from './pages/admin/RoleEdit';
 import SystemSettings from './pages/admin/SystemSettings';
 import Analytics from './pages/admin/Analytics';
+import AuditLog from './pages/admin/AuditLog';
 import WorkflowStudio from './pages/studio/WorkflowStudio';
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
             <Route path="/admin/roles/:id" element={<RoleEdit />} />
             <Route path="/admin/settings" element={<SystemSettings />} />
             <Route path="/admin/analytics" element={<Analytics />} />
+            <Route path="/admin/audit" element={<AuditLog />} />
           </Route>
         </Route>
 
