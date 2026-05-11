@@ -35,6 +35,12 @@ export class WorkflowsService {
     });
   }
 
+  async findAll() {
+    return this.prisma.workflowDefinition.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findAllInitiable(userRoles: string[], department?: string) {
     const roles = await this.prisma.role.findMany({
       where: { name: { in: userRoles } },
@@ -105,29 +111,36 @@ export class WorkflowsService {
       const nodes = graph?.nodes || [];
       const edges = graph?.edges || [];
 
-      const endNodes = nodes.filter(n => n.type === 'End');
+      const endNodes = nodes.filter(n => n.type.toLowerCase() === 'end');
       if (endNodes.length !== 1) {
         throw new BadRequestException('Graph must have exactly one End node.');
-      }
-
-      const startNodes = nodes.filter(n => n.type === 'Start');
-      if (startNodes.length !== 1) {
-        throw new BadRequestException('Graph must have exactly one Start node.');
       }
 
       const hasIncoming = new Set(edges.map(e => e.target));
       const hasOutgoing = new Set(edges.map(e => e.source));
 
+      // Logical Start nodes are those with no incoming edges
+      const startNodes = nodes.filter(node => !hasIncoming.has(node.id));
+      if (startNodes.length === 0) {
+        throw new BadRequestException('Graph must have at least one starting node (no incoming edges).');
+      }
+      if (startNodes.length > 1) {
+        throw new BadRequestException('Graph has multiple starting nodes. Only one start point is allowed.');
+      }
+
       for (const node of nodes) {
-        if (node.type !== 'Start' && !hasIncoming.has(node.id)) {
+        const isStart = !hasIncoming.has(node.id);
+        const isEnd = node.type.toLowerCase() === 'end';
+
+        if (!isStart && !hasIncoming.has(node.id)) {
           throw new BadRequestException(`Node ${node.id} is disconnected (no incoming edges)`);
         }
-        if (node.type !== 'End' && !hasOutgoing.has(node.id)) {
-          throw new BadRequestException(`Node ${node.id} is disconnected (no outgoing edges)`);
+        if (!isEnd && !hasOutgoing.has(node.id)) {
+          throw new BadRequestException(`Node ${node.id} (${node.data?.name || node.type}) is disconnected (no outgoing edges)`);
         }
       }
 
-      const formNodes = nodes.filter(n => n.type === 'Form');
+      const formNodes = nodes.filter(n => n.type.toLowerCase() === 'form');
       for (const formNode of formNodes) {
         const existingForm = await prisma.formDefinition.findUnique({
           where: {

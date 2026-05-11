@@ -50,7 +50,7 @@ const UsersList: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
 
   // Invite Form state
-  const [inviteForm, setInviteForm] = useState({ name: '', email: '', department: '' });
+  const [inviteForm, setInviteForm] = useState({ name: '', email: '', department: '', password: '' });
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -87,13 +87,16 @@ const UsersList: React.FC = () => {
     fetchRoles();
   }, []);
 
-  const handleDeactivate = async (id: string) => {
-    if (window.confirm('Are you sure you want to deactivate this user?')) {
+  const handleToggleStatus = async (user: User) => {
+    const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
+    const action = newStatus === 'ACTIVE' ? 'activate' : 'deactivate';
+    
+    if (window.confirm(`Are you sure you want to ${action} this user?`)) {
       try {
-        await axios.patch(`/users/${id}`, { status: 'inactive' });
+        await axios.patch(`/users/${user.id}`, { status: newStatus });
         fetchUsers();
       } catch (error) {
-        console.error('Failed to deactivate user', error);
+        console.error(`Failed to ${action} user`, error);
       }
     }
   };
@@ -102,10 +105,11 @@ const UsersList: React.FC = () => {
     try {
       await axios.post('/users', inviteForm);
       setInviteModalOpen(false);
-      setInviteForm({ name: '', email: '', department: '' });
+      setInviteForm({ name: '', email: '', department: '', password: '' });
       fetchUsers();
     } catch (error) {
       console.error('Failed to invite user', error);
+      alert('Failed to invite user. Make sure all fields are filled and password is at least 6 characters.');
     }
   };
 
@@ -149,9 +153,9 @@ const UsersList: React.FC = () => {
       width: 120,
       renderCell: (params: GridRenderCellParams) => (
         <Chip 
-          icon={params.value === 'active' ? <ActiveIcon /> : <InactiveIcon />}
-          label={params.value === 'active' ? 'Active' : 'Inactive'}
-          color={params.value === 'active' ? 'success' : 'default'}
+          icon={params.value === 'ACTIVE' ? <ActiveIcon /> : <InactiveIcon />}
+          label={params.value === 'ACTIVE' ? 'Active' : 'Inactive'}
+          color={params.value === 'ACTIVE' ? 'success' : 'default'}
           size="small"
         />
       )
@@ -168,13 +172,12 @@ const UsersList: React.FC = () => {
               <EditIcon fontSize="small" />
             </IconButton>
           </Tooltip>
-          <Tooltip title="Deactivate">
+          <Tooltip title={params.row.status === 'ACTIVE' ? "Deactivate" : "Activate"}>
             <IconButton 
-              color="error" 
-              onClick={() => handleDeactivate(params.row.id)}
-              disabled={params.row.status === 'inactive'}
+              color={params.row.status === 'ACTIVE' ? "error" : "success"} 
+              onClick={() => handleToggleStatus(params.row)}
             >
-              <DeactivateIcon fontSize="small" />
+              {params.row.status === 'ACTIVE' ? <DeactivateIcon fontSize="small" /> : <ActiveIcon fontSize="small" />}
             </IconButton>
           </Tooltip>
         </Box>
@@ -322,6 +325,14 @@ const UsersList: React.FC = () => {
               fullWidth 
               value={inviteForm.department}
               onChange={(e) => setInviteForm({ ...inviteForm, department: e.target.value })}
+            />
+            <TextField 
+              label="Initial Password" 
+              type="password"
+              fullWidth 
+              value={inviteForm.password}
+              onChange={(e) => setInviteForm({ ...inviteForm, password: e.target.value })}
+              helperText="Min 6 characters"
             />
           </Stack>
         </DialogContent>

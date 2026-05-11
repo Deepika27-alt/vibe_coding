@@ -21,7 +21,6 @@ const BaseNode = ({ data, selected, type, children }: BaseNodeProps) => {
       sx={{
         width: 220,
         borderRadius: 3,
-        overflow: 'hidden',
         border: selected ? `2px solid #3b82f6` : '2px solid transparent',
         background: 'rgba(255, 255, 255, 0.9)',
         backdropFilter: 'blur(10px)',
@@ -47,7 +46,9 @@ const BaseNode = ({ data, selected, type, children }: BaseNodeProps) => {
         alignItems: 'center', 
         gap: 1.5,
         borderBottom: '1px solid #f1f5f9',
-        bgcolor: `${color}10` 
+        bgcolor: `${color}10`,
+        borderTopLeftRadius: 10,
+        borderTopRightRadius: 10
       }}>
         <Box sx={{ 
           p: 0.75, 

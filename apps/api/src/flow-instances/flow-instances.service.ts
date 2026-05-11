@@ -25,7 +25,7 @@ export class FlowInstancesService {
       const nodes = graph?.nodes || [];
       const edges = graph?.edges || [];
 
-      const startNode = nodes.find((n: any) => n.type === 'Start');
+      const startNode = nodes.find((n: any) => n.type.toLowerCase() === 'start');
       if (!startNode) throw new BadRequestException('Graph has no Start node');
 
       const nextEdge = edges.find((e: any) => e.source === startNode.id);
@@ -53,9 +53,10 @@ export class FlowInstancesService {
         },
       });
 
-      if (nextNode && nextNode.type !== 'End') {
-        await this.workflowEngine.createTask(prisma, instance.id, nextNode);
-      } else if (nextNode && nextNode.type === 'End') {
+      let firstTask = null;
+      if (nextNode && nextNode.type.toLowerCase() !== 'end') {
+        firstTask = await this.workflowEngine.createTask(prisma, instance.id, nextNode);
+      } else if (nextNode && nextNode.type.toLowerCase() === 'end') {
         await prisma.flowInstance.update({
           where: { id: instance.id },
           data: { status: 'COMPLETED' },
@@ -70,7 +71,10 @@ export class FlowInstancesService {
         });
       }
 
-      return instance;
+      return {
+        ...instance,
+        firstTaskId: firstTask?.id,
+      };
     });
   }
 

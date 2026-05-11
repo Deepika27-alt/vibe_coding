@@ -52,9 +52,13 @@ const Catalogue: React.FC = () => {
     if (!confirmDialog) return;
     setStarting(true);
     try {
-      const response = await api.post('/instances', { workflowId: confirmDialog.id });
+      const response = await api.post('/instances', { workflowDefinitionId: confirmDialog.id });
       setConfirmDialog(null);
-      navigate(`/tasks/${response.data.firstTaskId}`);
+      if (response.data.firstTaskId) {
+        navigate(`/tasks/${response.data.firstTaskId}`);
+      } else {
+        navigate('/requests');
+      }
     } catch (err) {
       console.error('Failed to start instance', err);
     } finally {

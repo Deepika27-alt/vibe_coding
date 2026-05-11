@@ -4,7 +4,7 @@ export interface User {
   email: string;
   department: string;
   roles: { role: Role }[];
-  status: 'active' | 'inactive';
+  status: 'ACTIVE' | 'INACTIVE';
   lastLogin?: string;
 }
 

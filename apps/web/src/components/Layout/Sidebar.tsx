@@ -42,6 +42,7 @@ const Sidebar: React.FC = () => {
   ];
 
   const adminItems = [
+    { text: 'Workflows', icon: <CatalogueIcon />, path: '/admin/workflows' },
     { text: 'Users', icon: <PeopleIcon />, path: '/admin/users' },
     { text: 'Roles', icon: <RolesIcon />, path: '/admin/roles' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/admin/settings' },
@@ -118,7 +119,7 @@ const Sidebar: React.FC = () => {
         })}
       </List>
 
-      {user?.role === 'Platform Admin' && (
+      {user?.roles?.includes('ADMIN') && (
         <>
           <Box sx={{ px: 3, mt: 2, mb: 1 }}>
             <Typography variant="overline" sx={{ fontWeight: 700, color: 'text.disabled', letterSpacing: '0.1em' }}>

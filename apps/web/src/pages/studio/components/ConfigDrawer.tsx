@@ -161,6 +161,9 @@ const ConfigDrawer = ({ selectedNode, onUpdate, onDelete, onClose }: ConfigDrawe
                 value={data.conditionField || ''}
                 onChange={(e) => handleChange('conditionField', e.target.value)}
               >
+                <MenuItem value="department">Department</MenuItem>
+                <MenuItem value="role">Job Role</MenuItem>
+                <MenuItem value="location">Location</MenuItem>
                 <MenuItem value="amount">Amount</MenuItem>
                 <MenuItem value="reason">Reason</MenuItem>
                 <MenuItem value="priority">Priority</MenuItem>

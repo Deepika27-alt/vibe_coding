@@ -26,6 +26,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       setAuthToken(null);
+      localStorage.removeItem('vibe_auth_token');
+      localStorage.removeItem('vibe_auth_user');
       // Redirect to login if not already there
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';

@@ -35,20 +35,7 @@ const Login: React.FC = () => {
       const response = await api.post('/auth/login', { email, password });
       const { accessToken, user: backendUser } = response.data;
       
-      // Map backend roles to frontend role
-      let role = 'User';
-      if (backendUser.roles?.includes('ADMIN')) {
-        role = 'Platform Admin';
-      } else if (backendUser.roles?.includes('MANAGER')) {
-        role = 'Manager';
-      }
-
-      const user = {
-        ...backendUser,
-        role
-      };
-
-      login(accessToken, user);
+      login(accessToken, backendUser);
       navigate('/inbox');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed. Please check your credentials.');

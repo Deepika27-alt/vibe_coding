@@ -18,12 +18,18 @@ export class WorkflowsController {
     return this.workflowsService.create(createWorkflowDto, user.id);
   }
 
-  @Get()
-  findAll(
+  @Get('catalogue')
+  findCatalogue(
     @CurrentUser() user: any,
     @Query('department') department?: string,
   ) {
     return this.workflowsService.findAllInitiable(user.roles, department);
+  }
+
+  @Get()
+  @Roles('ADMIN', 'PROCESS_OWNER')
+  findAll() {
+    return this.workflowsService.findAll();
   }
 
   @Get(':id')

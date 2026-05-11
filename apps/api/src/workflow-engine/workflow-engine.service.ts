@@ -42,7 +42,7 @@ export class WorkflowEngineService {
         
         if (!node) continue;
 
-        if (node.type === 'End') {
+        if (node.type.toLowerCase() === 'end') {
           reachedEnd = true;
           if (node.config && node.config.endStatus) {
             endNodeStatus = node.config.endStatus as FlowInstanceStatus;
@@ -50,7 +50,7 @@ export class WorkflowEngineService {
           continue;
         }
 
-        if (node.type === 'Condition') {
+        if (node.type.toLowerCase() === 'condition') {
           const conditionEdges = edges.filter((e: any) => e.source === node.id);
           let matchedEdge = null;
           let defaultEdge = null;
@@ -143,11 +143,14 @@ export class WorkflowEngineService {
   }
 
   async createTask(prisma: any, instanceId: string, node: any) {
+    const type = node.type.toLowerCase();
     const taskTypeMap: Record<string, TaskType> = {
-      'Form': 'FORM',
-      'Approval': 'APPROVAL',
-      'Manual': 'MANUAL',
+      'form': 'FORM',
+      'approval': 'APPROVAL',
+      'manual': 'MANUAL',
     };
+
+    const taskType = taskTypeMap[type] || 'MANUAL';
 
     const now = new Date();
     let dueAt: Date | null = null;
@@ -161,7 +164,7 @@ export class WorkflowEngineService {
       data: {
         instanceId,
         stepId: node.id,
-        type: taskTypeMap[node.type] || 'MANUAL',
+        type: taskType,
         status: 'PENDING',
         assignedRoleId: node.assignedRoleId || null,
         assignedToId: node.assignedToId || null,

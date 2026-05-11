@@ -8,6 +8,7 @@ import TaskDetail from './pages/TaskDetail';
 import MyRequests from './pages/MyRequests';
 import Catalogue from './pages/Catalogue';
 import UsersList from './pages/admin/UsersList';
+import WorkflowsList from './pages/admin/WorkflowsList';
 import RolesList from './pages/admin/RolesList';
 import RoleEdit from './pages/admin/RoleEdit';
 import SystemSettings from './pages/admin/SystemSettings';
@@ -29,7 +30,8 @@ function App() {
           <Route path="/catalogue" element={<Catalogue />} />
 
           {/* Admin Routes */}
-          <Route element={<ProtectedRoute allowedRoles={['Platform Admin']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+            <Route path="/admin/workflows" element={<WorkflowsList />} />
             <Route path="/admin/users" element={<UsersList />} />
             <Route path="/admin/roles" element={<RolesList />} />
             <Route path="/admin/roles/:id" element={<RoleEdit />} />
@@ -39,7 +41,7 @@ function App() {
           </Route>
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['Platform Admin']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
           <Route path="/studio/:workflowId" element={<WorkflowStudio />} />
         </Route>
 

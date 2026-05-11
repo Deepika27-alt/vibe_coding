@@ -5,13 +5,17 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 
+@ApiTags('Admin / Audit')
+@ApiBearerAuth()
 @Controller('admin/audit')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
 export class AuditController {
   constructor(private readonly auditService: AuditService) {}
 
+  @ApiOperation({ summary: 'Get preview of audit logs' })
   @Get('preview')
   async getPreview(
     @Query('from') from: string,
@@ -21,6 +25,8 @@ export class AuditController {
     return this.auditService.getPreview(new Date(from), new Date(to), workflowId);
   }
 
+  @ApiOperation({ summary: 'Export audit logs as CSV or JSON' })
+  @ApiQuery({ name: 'format', enum: ['csv', 'json'], required: false })
   @Get('export')
   async export(
     @Query('from') from: string,
