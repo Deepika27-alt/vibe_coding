@@ -1,4 +1,4 @@
-# Workflow Platform Monorepo
+# Workflow Platform
 
 A powerful, full-stack workflow automation platform built with React 18, Material UI v6, NestJS, Prisma, PostgreSQL, Redis, and MinIO. This platform enables organizations to design, execute, and monitor complex business processes through a visual interface.
 
