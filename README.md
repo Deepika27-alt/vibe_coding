@@ -1,6 +1,6 @@
 # Workflow Platform
 
-A powerful, full-stack workflow automation platform built with React 18, Material UI v6, NestJS, Prisma, PostgreSQL, Redis, and MinIO. This platform enables organizations to design, execute, and monitor complex business processes through a visual interface.
+A powerful, full-stack workflow automation platform built with React 18, Material UI v6, NestJS, Prisma, and PostgreSQL. This platform enables organizations to design, execute, and monitor complex business processes through a visual interface.
 
 ## 🚀 Key Features
 
@@ -21,7 +21,7 @@ A powerful, full-stack workflow automation platform built with React 18, Materia
 
 ### 📥 Work Portal (End-User Interface)
 *   **Unified Inbox**: A central hub for users to view and action their assigned tasks.
-*   **Task Execution**: Interactive task detail views with dynamic forms and file upload support (MinIO).
+*   **Task Execution**: Interactive task detail views with dynamic forms and file upload support.
 *   **My Requests**: Real-time tracking of workflows initiated by the user.
 *   **Service Catalogue**: A searchable directory of available workflow templates to initiate.
 
@@ -46,7 +46,7 @@ A powerful, full-stack workflow automation platform built with React 18, Materia
 
 - **Node.js**: 18+
 - **npm**: 9+
-- **Docker & Docker Compose**: For running infrastructure services.
+- **PostgreSQL**: A running instance of PostgreSQL database.
 
 ## 🚀 Getting Started
 
@@ -55,22 +55,16 @@ A powerful, full-stack workflow automation platform built with React 18, Materia
     npm install
     ```
 
-2.  **Start Infrastructure**
-    ```bash
-    docker-compose up -d
-    ```
-    *Starts PostgreSQL, Redis, and MinIO.*
+2.  **Configure Environment**
+    Copy `apps/api/.env.example` to `apps/api/.env` and configure your PostgreSQL connection string and other service credentials.
 
-3.  **Configure Environment**
-    Copy `apps/api/.env.example` to `apps/api/.env` and configure your database and service credentials.
-
-4.  **Database Migration**
+3.  **Database Migration**
     ```bash
     cd apps/api
     npx prisma db push
     ```
 
-5.  **Run Development Servers**
+4.  **Run Development Servers**
     ```bash
     npm run dev
     ```
